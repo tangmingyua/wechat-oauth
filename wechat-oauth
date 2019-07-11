@@ -1,0 +1,36 @@
+const wechat_GZH_oauth = async (ctx,platform_id)=>{
+    if(ctx.cookies.get['yov_user_info_'+this.platform_id]){//第一次之后获取结果放入cookie
+        return JSON.parse(ctx.cookies.get['yov_user_info_'+this.platform_id]);
+    } else {//为在cookie获取到 则调用接口获取
+        ctx.redirect(`https://open.weixin.qq.com/connect/oauth2/authorize?appid=${settings['md_appid_appsecret']['appid']}&redirect_uri=${encodeURIComponent(ctx.request.host+"/user/oauth?go_url="+ctx.request.url)}&response_type=code&scope=snsapi_base&state=1&connect_redirect=1#wechat_redirect`);//把go_url记录下
+    }
+}
+
+
+router.post('/oauth',async (ctx, next)=>{
+  let user_info = await md_wechat_oauth.getUserInfo(ctx,ctx['query']['code']);
+  ctx.redirect(ctx['query']['go_url']);//置入cookie后再跳转一开始想要的地方
+})
+
+    /**
+     * 获取openid
+     * @param ctx
+     * @param code
+     * @returns {Promise<*>}
+     */
+    async getUserInfo(ctx,code){
+        if(ctx && ctx.cookies.get['yov_user_info_'+this.platform_id]){
+            return JSON.parse(ctx.cookies.get['yov_user_info_'+this.platform_id]);
+        } else {
+            let body = await getJSON(`https://api.weixin.qq.com/sns/oauth2/access_token?appid=${this.appid}&secret=${this.secret}&code=${code}&grant_type=authorization_code`);
+            if(body && body['errcode']==0){
+                let user_info = await getJSON(`https://api.weixin.qq.com/sns/userinfo?access_token=${body['access_token']}&openid=${body['openid']}&lang=en`);
+                user_info['nickname'] = encodeURIComponent(user_info['nickname']);
+                user_info['openid'] = body['openid'];
+                ctx.cookies.set('yov_user_info_'+this.platform_id,JSON.stringify(user_info));//获取信息置入cookie
+                return user_info;
+            } else {
+                return {};
+            }
+        }
+    }
